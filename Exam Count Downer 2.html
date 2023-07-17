@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Count Downer</title>
+    <style>
+        *
+        {
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family: 'Arial';
+        }
+        body
+        {
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            background:#000000;
+            overflow: hidden;
+        }
+        .star
+        {
+            position: absolute;
+            background: #ffffff;
+            bottom: 10px;
+            left: 10px;
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            /* filter: blur(1px); */
+            z-index: 0;
+            opacity: 1;
+        }
+        .text
+        {
+            position: absolute;
+            justify-content:center;
+            align-items:center;
+            text-align: center;
+            left: 50%;
+            top: 50%;
+            transform: translateX(-50%) translateY(-50%);
+            font-size: 70px;
+            font-weight: 800;
+            font-family: 'Impact', 'Arial';
+            line-height: 50px;
+            color: #ffffff;
+            z-index: 9;
+        }
+        .setBt
+        {
+            position: absolute;
+            justify-content:center;
+            align-items:center;
+            height: 64px;
+            width: 64px;
+            top: 10px;
+            left: 10px;
+            font-size: 20px;
+            font-weight: 400;
+            z-index: 14;
+            background-color: #ffffff00;
+            border: 2px solid #00000000;
+            color: #00000000;
+            border-radius: 10px;
+        }
+        .setBt:hover
+        {
+            border: 2px solid #ffffff;
+            background-color: #ffffff62;
+            color: #ffffff;
+            border-radius: 10px;
+        }
+        .dialogBox
+        {
+            position: absolute;
+            justify-content:center;
+            align-items:center;
+            height: 300px;
+            width: 300px;
+            top: 50%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-50%);
+            font-size: 20px;
+            font-weight: 400;
+            z-index: 14;
+            border: 2px solid #aaaaaa;
+            background-color: #707070;
+            color: #ffffff;
+            border-radius: 10px;
+            z-index: 10;
+            scale: 0;
+        }
+        #dateInput
+        {
+            position: relative;
+            margin: 10px;
+            font-size:larger;
+            text-align: center;
+        }
+        .OkBt
+        {
+            position: relative;
+            align-items: center;
+            text-align: center;
+            font-size: large;
+            height: 30px;
+            width: 150px;
+            border: 2px solid #aaaaaa;
+            background-color: #707070;
+            color: #ffffff;
+            border-radius: 10px;
+            margin-left: 60px;
+            margin-top: 5px;
+        }
+        .OkBt:hover
+        {
+            position: relative;
+            align-items: center;
+            text-align: center;
+            font-size: large;
+            height: 30px;
+            width: 150px;
+            border: 2px solid #aaaaaa;
+            background-color: #b0afaf;
+            color: #ffffff;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <button id="setBt" class="setBt" onclick="showSetDialog()">Set</button>
+    <div id="starSet"></div>
+    <div class="text">
+        <div id="time">00:00:00</div><br>
+        <div id="day">0</div><br>
+        <div id="mon">0</div><br>
+        <div id="yr">0</div><br>
+    </div>
+    <div class="dialogBox" id="dialogBox">
+        &nbsp;&nbsp;Exam Date: 
+        <input type="date" id="dateInput">
+        <button class="OkBt" onclick="setDate(), hideSetDialog(), setAll()">Ok</button>
+    </div>
+    <script>
+        starSet = document.getElementById("starSet")
+        setBt = document.getElementById("setBt")
+        dateInput = document.getElementById("dateInput")
+        dialogBox = document.getElementById("dialogBox")
+        timeText = document.getElementById("time")
+        yrText = document.getElementById("yr")
+        monText = document.getElementById("mon")
+        dayText = document.getElementById("day")
+
+        starObjSet = []
+
+        totalNoStars = 100
+        movSpeed = .05
+        scaleSpeed = .005
+
+        mouseMove = false
+
+        currentDate = [0, 0, 0]
+        examDate = [2023, 5, 17]
+        day = mon = yr = 0
+        date = new Date()
+        set = false
+
+        function randNoBool()
+        {
+            return Math.random() > .5 ? 1 : 0
+        }
+
+        class star
+        {
+            constructor(n)
+            {
+                this.pos = [0, 0]
+                this.scale = 0
+                this.sMin = 1
+                this.sMax = 5
+                this.opa = 0
+                this.opaDiff = .1
+
+                this.spawnAreaPercen = .2
+                this.Div = null
+                this.dir = [0, 0]
+                this.no = n
+
+                this.make()
+            }
+
+            posRefresh()
+            {
+                this.dir[0] = Math.random() * (1-2*randNoBool()) * window.innerWidth * this.spawnAreaPercen
+                this.dir[1] = Math.random() * (1-2*randNoBool()) * window.innerHeight * this.spawnAreaPercen
+
+                this.pos[0] = Math.round(this.dir[0] + window.innerWidth/2)
+                this.pos[1] = Math.round(this.dir[1] + window.innerHeight/2)
+                this.Div.style.left = `${this.pos[0]}px`;
+                this.Div.style.bottom = `${this.pos[1]}px`;
+
+                this.scale = Math.round(Math.random() * (this.sMax-this.sMin))+this.sMin
+                // this.scale = Math.round(Math.sqrt((this.dir[0]/window.innerWidth)**2 + (this.dir[1]/window.innerHeight)**2) * (this.sMax-this.sMin))+this.sMin
+
+                this.Div.style.height = `${this.scale}px`;
+                this.Div.style.width = `${this.scale}px`;
+
+                // console.log(this.pos, this.dir)
+                this.opa = 0
+            }
+
+            make()
+            {
+                this.Div = document.createElement('div')
+                starSet.appendChild(this.Div)
+                this.Div.classList.add("star")
+                this.Div.id = `s${this.n}`
+
+                this.posRefresh()
+            }
+
+            update()
+            {
+                date = new Date()
+
+                this.pos[0] += this.dir[0]*movSpeed
+                this.pos[1] += this.dir[1]*movSpeed
+                this.scale += scaleSpeed * ((this.dir[0])**2 + (this.dir[1]**2))*2/(window.innerHeight+window.innerWidth)
+                // console.log(scaleSpeed * ((this.dir[0])**2 + (this.dir[1]**2))*2/(window.innerHeight+window.innerWidth))
+
+                this.Div.style.left = `${this.pos[0]}px`;
+                this.Div.style.bottom = `${this.pos[1]}px`;
+
+                this.Div.style.height = `${this.scale}px`;
+                this.Div.style.width = `${this.scale}px`;
+
+                if(Math.abs(this.dir[0])<10 && Math.abs(this.dir[1])<10)
+                {
+                    this.dir[0] += 10
+                    this.dir[1] += 10
+                }
+
+                // this.opa += (this.opa<1 ? (this.opaDiff*this.scale/10) : 0)
+                // this.Div.style.opacity = this.opa
+            }
+        }
+
+        function update()
+        {
+            starObjSet.forEach(s => {
+                s.update()
+                if(s.pos[0]<0 || s.pos[0]>window.innerWidth || s.pos[1]<0 || s.pos[1]>window.innerHeight)
+                {
+                    n = s.posRefresh()
+                }
+            });
+            // console.log(mouseMove)
+
+            if(mouseMove)
+            {
+                setBt.style = 'background-color: #ffffff62; border: 2px solid #ffffff; color: #ffffff;'
+            }
+            else
+            {
+                setBt.style = 'background-color: #ffffff00; border: 2px solid #00000000; color: #00000000;'
+            }
+            setAll()
+            setTimeout(update, 1000/60);
+        }
+
+        function showSetDialog()
+        {
+            dialogBox.style = "scale: 1;"
+        }
+        function hideSetDialog()
+        {
+            dialogBox.style = "scale: 0;"
+        }
+
+        function setDate()
+        {
+            examDate = dateInput.value.split("-")
+            examDate[0] = Number(examDate[0])
+            examDate[1] = Number(examDate[1])
+            examDate[2] = Number(examDate[2])
+            console.log(examDate)
+            set = true
+        }
+
+        function getDaysOfMon(n, y)
+        {
+            switch(n)
+            {
+                case 1:
+                case 3:
+                case 5:
+                case 7:
+                case 8:
+                case 10:
+                case 12: return 31; break;
+                case 4:
+                case 6:
+                case 9:
+                case 11: return 30; break;
+                case 2: return y%4 == 0 ? 29: 28;
+            }
+        }
+
+        function setAll()
+        {
+            currentDate = [date.getFullYear(), date.getMonth()+1, date.getDate()]
+            dayText.innerHTML = monText.innerHTML = yrText.innerHTML = ""
+
+            function timeOver()
+            {
+                examDate = [0, 0, 0]
+                timeText.innerHTML = "TIME OVER"
+            }
+            
+            // if(examDate[0] != 0)
+            // {
+            //     if(examDate[0] >= currentDate[0])
+            //     {
+            //         yr = examDate[0]-currentDate[0]
+            //     }
+            //     else
+            //     {
+            //         examDate = [0, 0, 0]
+            //         timeText.innerHTML = "TIME OVER"
+            //     }
+            //     if(examDate[1] >= currentDate[1])
+            //     {
+            //         mon = examDate[1]-currentDate[1]
+            //     }
+            //     else
+            //     {
+            //         yr--
+            //         mon = 12 - currentDate[1] + examDate[1]
+            //     }
+            //     if(examDate[2] > currentDate[2])
+            //     {
+            //         day = examDate[2]-currentDate[2] - 1
+            //     }
+            //     else
+            //     {
+            //         mon--
+            //         day = getDaysOfMon(currentDate[1], currentDate[0]) - currentDate[2] + examDate[2] - 1
+            //     }
+
+            //     if(day)
+            //     {
+            //         dayText.innerHTML = `${day} Days`
+            //     }
+            //     if(mon)
+            //     {
+            //         monText.innerHTML = `${mon} Months`
+            //     }
+            //     if(yr)
+            //     {
+            //         yrText.innerHTML = `${yr} Years`
+            //     }
+
+            //     timeText.innerHTML = `${23-date.getHours()}:${59-date.getMinutes()}:${60-date.getSeconds()}`
+                
+            //     if(day < 0 || mon < 0 || yr < 0)
+            //     {
+            //         examDate = [0, 0, 0]
+            //         timeText.innerHTML = "TIME OVER"
+            //         console.log(day, mon, yr)
+            //     }
+
+            // }
+            if(examDate[0] != 0)
+            {
+                // console.log(yr, mon, day)
+                if(day)
+                {
+                    dayText.innerHTML = String(day) + (day==1 ? " Day":" Days")
+                }
+                if(mon)
+                {
+                    monText.innerHTML = String(mon) + (mon==1 ? " Month":" Months")
+                }
+                if(yr)
+                {
+                    yrText.innerHTML = String(yr) + (yr==1 ? " Year":" Years")
+                }
+
+                timeText.innerHTML = 
+                ((23-date.getHours())<10 ? "0":"") + String(23-date.getHours())+
+                (date.getSeconds()%2==0 ? ":":"&nbsp;")+
+                ((59-date.getMinutes())<10 ? "0":"") + String(59-date.getMinutes())+
+                (date.getSeconds()%2==0 ? ":":"&nbsp;")+
+                ((60-date.getSeconds())<10 ? "0":"") + String(60-date.getSeconds())
+
+                if(examDate[0] >= currentDate[0])
+                {
+                    yr = examDate[0]-currentDate[0]
+
+                    if(examDate[1] >= currentDate[1])
+                    {
+                        mon = examDate[1]-currentDate[1]
+                    }
+                    else if(yr > 0)
+                    {
+                        yr--
+                        mon = 12 - currentDate[1] + examDate[1]
+                    }
+                    else
+                    {
+                        timeOver()
+                    }
+
+                    if(examDate[2] > currentDate[2])
+                    {
+                        day = examDate[2]-currentDate[2] - 1
+                    }
+                    else if(mon > 0)
+                    {
+                        mon--
+                        day = getDaysOfMon(currentDate[1], currentDate[0]) - currentDate[2] + examDate[2] - 1
+                    }
+                    else if(yr > 0)
+                    {
+                        timeOver()
+                    }
+                }
+                else
+                {
+                    timeOver()
+                }
+                
+                
+
+            }
+        }
+
+        for(var i=1; i<=totalNoStars; i++)
+        {
+            starObjSet.push(new star(i))
+        }
+        update()
+
+        window.addEventListener('mousemove', (event) => {
+        // console.log(event);
+        mouseMove = true;
+        setTimeout(()=>{mouseMove = false}, 3000)
+        });
+    </script>
+</body>
+</html>
